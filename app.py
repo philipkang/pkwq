@@ -62,7 +62,7 @@ def ask_question(client, content, question):
 
 # Streamlit app
 def main():          
-    st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A (3 Questions Limit)</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A </h1>", unsafe_allow_html=True)
 
     # Get API keys from environment variables or Streamlit secrets
     jina_api_key = os.environ.get('JINA_API_KEY') or st.secrets["JINA_API_KEY"]
