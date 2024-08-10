@@ -19,7 +19,7 @@ def fetch_content(url, jina_api_key):
 def ask_question(client, content, question):
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": f"Here's some content:\n\n{content[:7000]}\n\nBased on this content, please answer the following question and be concise: {question}"}
+        {"role": "user", "content": f"Here's some content:\n\n{content[:8000]}\n\nBased on this content, please answer the following question and be concise: {question}"}
     ]
 
     response = client.chat.completions.create(
@@ -32,7 +32,7 @@ def ask_question(client, content, question):
 
 # Streamlit app
 def main():
-    st.title("URL Content Q&A (5 Questions Limit)")
+    st.title("URL Content Q&A (3 Questions Limit)")
 
     # Get API keys from environment variables or Streamlit secrets
     jina_api_key = os.environ.get('JINA_API_KEY') or st.secrets["JINA_API_KEY"]
@@ -71,22 +71,22 @@ def main():
         # Question input
         question = st.text_input("Enter your question:")
 
-        if st.button("Ask") and st.session_state.question_count < 5:
+        if st.button("Ask") and st.session_state.question_count < 3:
             if question:
                 st.session_state.question_count += 1
                 with st.spinner("Generating answer..."):
                     answer = ask_question(client, st.session_state.content, question)
-                st.subheader(f"Answer (Question {st.session_state.question_count}/5):")
+                st.subheader(f"Answer (Question {st.session_state.question_count}/3):")
                 st.write(answer)
             else:
                 st.warning("Please enter a question.")
         
         # Display remaining questions
-        remaining = 5 - st.session_state.question_count
+        remaining = 3 - st.session_state.question_count
         st.write(f"Remaining questions: {remaining}")
 
-        if st.session_state.question_count >= 5:
-            st.warning("You have reached the maximum number of questions (5). Please refresh the page to start over.")
+        if st.session_state.question_count >= 3:
+            st.warning("You have reached the maximum number of questions (3). Please refresh the page to start over.")
 
     # Reset button
     if st.button("Reset"):
