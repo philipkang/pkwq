@@ -42,7 +42,7 @@ def ask_question(client, content, question):
 
 # Streamlit app
 def main():
-    st.title("URL Content Q&A (3 Questions Limit)")
+    st.title("Web Content Q&A (3 Questions Limit)")
 
     # Get API keys from environment variables or Streamlit secrets
     jina_api_key = os.environ.get('JINA_API_KEY') or st.secrets["JINA_API_KEY"]
