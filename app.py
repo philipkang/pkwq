@@ -12,6 +12,21 @@ hide_streamlit_style = """
             header {visibility: hidden;}
             </style>
             """
+
+custom_css = """
+<style>
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 5rem;
+        padding-right: 5rem;
+    }
+    h1 {
+        margin-top: -1rem;
+    }
+</style>
+"""
+st.markdown(custom_css, unsafe_allow_html=True)
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Function to fetch content from URL
@@ -42,7 +57,9 @@ def ask_question(client, content, question):
 
 # Streamlit app
 def main():
-    st.title("Web Content Q&A (3 Questions Limit)")
+    st.set_page_config(layout="wide")
+            
+    st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A (3 Questions Limit)</h1>", unsafe_allow_html=True)
 
     # Get API keys from environment variables or Streamlit secrets
     jina_api_key = os.environ.get('JINA_API_KEY') or st.secrets["JINA_API_KEY"]
