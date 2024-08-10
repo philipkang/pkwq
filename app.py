@@ -4,6 +4,16 @@ import urllib.error
 import os
 from openai import OpenAI
 
+# Hide Streamlit's branding and header
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Function to fetch content from URL
 def fetch_content(url, jina_api_key):
     full_url = f"https://r.jina.ai/{url}"
