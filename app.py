@@ -4,6 +4,9 @@ import urllib.error
 import os
 from openai import OpenAI
 
+# Set page config at the very beginning
+st.set_page_config(layout="wide")
+
 # Hide Streamlit's branding and header
 hide_streamlit_style = """
             <style>
@@ -12,7 +15,9 @@ hide_streamlit_style = """
             header {visibility: hidden;}
             </style>
             """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
+# Add custom CSS
 custom_css = """
 <style>
     .block-container {
@@ -27,7 +32,7 @@ custom_css = """
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 
 # Function to fetch content from URL
 def fetch_content(url, jina_api_key):
@@ -56,9 +61,7 @@ def ask_question(client, content, question):
     return response.choices[0].message.content
 
 # Streamlit app
-def main():
-    st.set_page_config(layout="wide")
-            
+def main():          
     st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A (3 Questions Limit)</h1>", unsafe_allow_html=True)
 
     # Get API keys from environment variables or Streamlit secrets
