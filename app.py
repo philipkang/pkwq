@@ -76,7 +76,7 @@ def main():
         st.session_state.question_count = 0
         st.session_state.reset = False
 
-    st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A (3 Questions Limit)</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A</h1>", unsafe_allow_html=True)
 
     # Get API keys from environment variables or Streamlit secrets
     jina_api_key = os.environ.get('JINA_API_KEY') or st.secrets["JINA_API_KEY"]
