@@ -62,7 +62,21 @@ def ask_question(client, content, question):
 
 # Streamlit app
 def main():          
-    st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A </h1>", unsafe_allow_html=True)
+    # Initialize session state
+    if 'content' not in st.session_state:
+        st.session_state.content = None
+    if 'question_count' not in st.session_state:
+        st.session_state.question_count = 0
+    if 'reset' not in st.session_state:
+        st.session_state.reset = False
+
+    # Check if reset is triggered
+    if st.session_state.reset:
+        st.session_state.content = None
+        st.session_state.question_count = 0
+        st.session_state.reset = False
+
+    st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A (3 Questions Limit)</h1>", unsafe_allow_html=True)
 
     # Get API keys from environment variables or Streamlit secrets
     jina_api_key = os.environ.get('JINA_API_KEY') or st.secrets["JINA_API_KEY"]
@@ -74,12 +88,6 @@ def main():
 
     # Initialize OpenAI client
     client = OpenAI(api_key=openai_api_key)
-
-    # Initialize session state
-    if 'content' not in st.session_state:
-        st.session_state.content = None
-    if 'question_count' not in st.session_state:
-        st.session_state.question_count = 0
 
     # URL input
     url = st.text_input("Enter the URL:")
@@ -101,28 +109,27 @@ def main():
         # Question input
         question = st.text_input("Enter your question:")
 
-        if st.button("Ask") and st.session_state.question_count < 5:
+        if st.button("Ask") and st.session_state.question_count < 3:
             if question:
                 st.session_state.question_count += 1
                 with st.spinner("Generating answer..."):
                     answer = ask_question(client, st.session_state.content, question)
-                st.subheader(f"Answer (Question {st.session_state.question_count}/5):")
+                st.subheader(f"Answer (Question {st.session_state.question_count}/3):")
                 st.write(answer)
             else:
                 st.warning("Please enter a question.")
         
         # Display remaining questions
-        remaining = 5 - st.session_state.question_count
+        remaining = 3 - st.session_state.question_count
         st.write(f"Remaining questions: {remaining}")
 
-        if st.session_state.question_count >= 5:
-            st.warning("You have reached the maximum number of questions (5). Please refresh the page to start over.")
+        if st.session_state.question_count >= 3:
+            st.warning("You have reached the maximum number of questions (3). Please reset to start over.")
 
     # Reset button
     if st.button("Reset"):
-        st.session_state.content = None
-        st.session_state.question_count = 0
-        st.experimental_rerun()
+        st.session_state.reset = True
+        st.rerun()
 
 if __name__ == "__main__":
     main()
