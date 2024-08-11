@@ -101,22 +101,22 @@ def main():
         # Question input
         question = st.text_input("Enter your question:")
 
-        if st.button("Ask") and st.session_state.question_count < 3:
+        if st.button("Ask") and st.session_state.question_count < 5:
             if question:
                 st.session_state.question_count += 1
                 with st.spinner("Generating answer..."):
                     answer = ask_question(client, st.session_state.content, question)
-                st.subheader(f"Answer (Question {st.session_state.question_count}/3):")
+                st.subheader(f"Answer (Question {st.session_state.question_count}/5):")
                 st.write(answer)
             else:
                 st.warning("Please enter a question.")
         
         # Display remaining questions
-        remaining = 3 - st.session_state.question_count
+        remaining = 5 - st.session_state.question_count
         st.write(f"Remaining questions: {remaining}")
 
-        if st.session_state.question_count >= 3:
-            st.warning("You have reached the maximum number of questions (3). Please refresh the page to start over.")
+        if st.session_state.question_count >= 5:
+            st.warning("You have reached the maximum number of questions (5). Please refresh the page to start over.")
 
     # Reset button
     if st.button("Reset"):
