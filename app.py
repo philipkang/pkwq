@@ -72,7 +72,7 @@ def main():
     if 'question' not in st.session_state:
         st.session_state.question = ""
 
-    st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A </h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A</h1>", unsafe_allow_html=True)
 
     # Get API keys from environment variables or Streamlit secrets
     jina_api_key = os.environ.get('JINA_API_KEY') or st.secrets["JINA_API_KEY"]
@@ -107,26 +107,22 @@ def main():
             st.error(f'Unexpected error: {str(e)}. URL: {url}')
 
     if st.session_state.content:
-        # Question input
-        question = st.text_input("Enter your question:", value=st.session_state.question, key="question_input")
+        # Display question count
+        if st.session_state.question_count > 0:
+            st.info(f"{st.session_state.question_count} question{'s' if st.session_state.question_count > 1 else ''} have been asked for this URL.")
 
-        if st.button("Ask") and st.session_state.question_count < 5:
+        # Question input
+        question = st.text_input("Enter your question:", value="", key="question_input")
+
+        if st.button("Ask"):
             if question:
                 st.session_state.question_count += 1
-                st.session_state.question = question
                 with st.spinner("Generating answer..."):
                     answer = ask_question(client, st.session_state.content, question)
-                st.subheader(f"Answer (Question {st.session_state.question_count}/5):")
+                st.subheader(f"Answer to Question {st.session_state.question_count}:")
                 st.write(answer)
             else:
                 st.warning("Please enter a question.")
-        
-        # Display remaining questions
-        remaining = 5 - st.session_state.question_count
-        st.write(f"Remaining questions: {remaining}")
-
-        if st.session_state.question_count >= 5:
-            st.warning("You have reached the maximum number of questions (5). Please reset to start over.")
 
     # Reset button
     if st.button("Reset"):
