@@ -71,19 +71,41 @@ def main():
         st.session_state.url = ""
     if 'question' not in st.session_state:
         st.session_state.question = ""
+    if 'openai_api_key' not in st.session_state:
+        st.session_state.openai_api_key = ""
+    if 'jina_api_key' not in st.session_state:
+        st.session_state.jina_api_key = ""
 
     st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A</h1>", unsafe_allow_html=True)
 
-    # Get API keys from environment variables or Streamlit secrets
-    jina_api_key = os.environ.get('JINA_API_KEY') or st.secrets["JINA_API_KEY"]
-    openai_api_key = os.environ.get('OPENAI_API_KEY') or st.secrets["OPENAI_API_KEY"]
+    # Jina API key input (automatically masked)
+    if not st.session_state.jina_api_key:
+        jina_api_key = st.text_input("Enter your Jina API key:", type="password", key="jina_key_input")
+        if st.button("Set Jina API Key"):
+            if jina_api_key:
+                st.session_state.jina_api_key = jina_api_key
+                st.success("Jina API key is set.")
+            else:
+                st.warning("Please enter a Jina API key.")
+    else:
+        st.success("Jina API key is set.")
 
-    if not jina_api_key or not openai_api_key:
-        st.error("API keys are missing. Please set JINA_API_KEY and OPENAI_API_KEY.")
-        return
+    # OpenAI API key input (automatically masked)
+    if not st.session_state.openai_api_key:
+        openai_api_key = st.text_input("Enter your OpenAI API key:", type="password", key="openai_key_input")
+        if st.button("Set OpenAI API Key"):
+            if openai_api_key:
+                st.session_state.openai_api_key = openai_api_key
+                st.success("OpenAI API key is set.")
+            else:
+                st.warning("Please enter an OpenAI API key.")
+    else:
+        st.success("OpenAI API key is set.")
 
-    # Initialize OpenAI client
-    client = OpenAI(api_key=openai_api_key)
+    # Initialize OpenAI client if API key is provided
+    client = None
+    if st.session_state.openai_api_key:
+        client = OpenAI(api_key=st.session_state.openai_api_key)
 
     # URL input
     url = st.text_input("Enter the URL:", value=st.session_state.url, key="url_input")
@@ -94,17 +116,20 @@ def main():
         st.session_state.question_count = 0
 
     if url and not st.session_state.content:
-        try:
-            # Fetch content
-            with st.spinner("Fetching content..."):
-                st.session_state.content = fetch_content(url, jina_api_key)
-            st.success("Content fetched successfully!")
-        except urllib.error.HTTPError as e:
-            st.error(f'HTTP Error {e.code}: {e.reason}. URL: {url}')
-        except urllib.error.URLError as e:
-            st.error(f'URL Error: {str(e)}. URL: {url}')
-        except Exception as e:
-            st.error(f'Unexpected error: {str(e)}. URL: {url}')
+        if not st.session_state.jina_api_key:
+            st.warning("Please enter your Jina API key.")
+        else:
+            try:
+                # Fetch content
+                with st.spinner("Fetching content..."):
+                    st.session_state.content = fetch_content(url, st.session_state.jina_api_key)
+                st.success("Content fetched successfully!")
+            except urllib.error.HTTPError as e:
+                st.error(f'HTTP Error {e.code}: {e.reason}. URL: {url}')
+            except urllib.error.URLError as e:
+                st.error(f'URL Error: {str(e)}. URL: {url}')
+            except Exception as e:
+                st.error(f'Unexpected error: {str(e)}. URL: {url}')
 
     if st.session_state.content:
         # Display question count
@@ -115,14 +140,16 @@ def main():
         question = st.text_input("Enter your question:", value="", key="question_input")
 
         if st.button("Ask"):
-            if question:
+            if not st.session_state.openai_api_key:
+                st.warning("Please enter your OpenAI API key.")
+            elif not question:
+                st.warning("Please enter a question.")
+            elif client:
                 st.session_state.question_count += 1
                 with st.spinner("Generating answer..."):
                     answer = ask_question(client, st.session_state.content, question)
                 st.subheader(f"Answer to Question {st.session_state.question_count}:")
                 st.write(answer)
-            else:
-                st.warning("Please enter a question.")
 
     # Reset button
     if st.button("Reset"):
