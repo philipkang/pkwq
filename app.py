@@ -1,7 +1,6 @@
 import streamlit as st
 import urllib.request
 import urllib.error
-import os
 from openai import OpenAI
 
 # Set page config at the very beginning
