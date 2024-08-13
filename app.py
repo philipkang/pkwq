@@ -1,7 +1,9 @@
 import streamlit as st
 import urllib.request
 import urllib.error
-from openai import OpenAI
+import os
+import requests
+import json
 
 # Set page config at the very beginning
 st.set_page_config(layout="wide")
@@ -32,6 +34,8 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
+# Azure OpenAI API endpoint
+api_url = "https://copilot-sales.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-06-01"
 
 # Function to fetch content from URL
 def fetch_content(url, jina_api_key):
@@ -44,20 +48,31 @@ def fetch_content(url, jina_api_key):
     with urllib.request.urlopen(req) as response:
         return response.read().decode('utf-8')
 
-# Function to ask question using OpenAI
-def ask_question(client, content, question):
+# Function to ask question using Azure OpenAI
+def ask_question(azure_api_key, content, question):
+    headers = {
+        "Content-Type": "application/json",
+        "api-key": azure_api_key,
+    }
+
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": f"Here's some content:\n\n{content[:8000]}\n\nBased on this content, please answer the following question and be concise: {question}"}
     ]
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=messages,
-        max_tokens=700
-    )
+    payload = {
+        "messages": messages,
+        "max_tokens": 700,
+        "temperature": 0
+    }
 
-    return response.choices[0].message.content
+    response = requests.post(api_url, headers=headers, data=json.dumps(payload))
+
+    if response.status_code == 200:
+        response_data = response.json()
+        return response_data.get("choices", [])[0].get("message", {}).get("content", "")
+    else:
+        raise Exception(f"Request failed with status code {response.status_code}: {response.text}")
 
 # Streamlit app
 def main():          
@@ -70,41 +85,16 @@ def main():
         st.session_state.url = ""
     if 'question' not in st.session_state:
         st.session_state.question = ""
-    if 'openai_api_key' not in st.session_state:
-        st.session_state.openai_api_key = ""
-    if 'jina_api_key' not in st.session_state:
-        st.session_state.jina_api_key = ""
 
     st.markdown("<h1 style='text-align: center; margin-bottom: 2rem;'>Web Content Q&A</h1>", unsafe_allow_html=True)
 
-    # Jina API key input (automatically masked)
-    if not st.session_state.jina_api_key:
-        jina_api_key = st.text_input("Enter your Jina API key:", type="password", key="jina_key_input")
-        if st.button("Set Jina API Key"):
-            if jina_api_key:
-                st.session_state.jina_api_key = jina_api_key
-                st.success("Jina API key is set.")
-            else:
-                st.warning("Please enter a Jina API key.")
-    else:
-        st.success("Jina API key is set.")
+    # Get API keys from environment variables or Streamlit secrets
+    jina_api_key = os.environ.get('JINA_API_KEY') or st.secrets["JINA_API_KEY"]
+    azure_api_key = os.environ.get('AZURE_API_KEY') or st.secrets["AZURE_API_KEY"]
 
-    # OpenAI API key input (automatically masked)
-    if not st.session_state.openai_api_key:
-        openai_api_key = st.text_input("Enter your OpenAI API key:", type="password", key="openai_key_input")
-        if st.button("Set OpenAI API Key"):
-            if openai_api_key:
-                st.session_state.openai_api_key = openai_api_key
-                st.success("OpenAI API key is set.")
-            else:
-                st.warning("Please enter an OpenAI API key.")
-    else:
-        st.success("OpenAI API key is set.")
-
-    # Initialize OpenAI client if API key is provided
-    client = None
-    if st.session_state.openai_api_key:
-        client = OpenAI(api_key=st.session_state.openai_api_key)
+    if not jina_api_key or not azure_api_key:
+        st.error("API keys are missing. Please set JINA_API_KEY and AZURE_API_KEY.")
+        return
 
     # URL input
     url = st.text_input("Enter the URL:", value=st.session_state.url, key="url_input")
@@ -115,20 +105,17 @@ def main():
         st.session_state.question_count = 0
 
     if url and not st.session_state.content:
-        if not st.session_state.jina_api_key:
-            st.warning("Please enter your Jina API key.")
-        else:
-            try:
-                # Fetch content
-                with st.spinner("Fetching content..."):
-                    st.session_state.content = fetch_content(url, st.session_state.jina_api_key)
-                st.success("Content fetched successfully!")
-            except urllib.error.HTTPError as e:
-                st.error(f'HTTP Error {e.code}: {e.reason}. URL: {url}')
-            except urllib.error.URLError as e:
-                st.error(f'URL Error: {str(e)}. URL: {url}')
-            except Exception as e:
-                st.error(f'Unexpected error: {str(e)}. URL: {url}')
+        try:
+            # Fetch content
+            with st.spinner("Fetching content..."):
+                st.session_state.content = fetch_content(url, jina_api_key)
+            st.success("Content fetched successfully!")
+        except urllib.error.HTTPError as e:
+            st.error(f'HTTP Error {e.code}: {e.reason}. URL: {url}')
+        except urllib.error.URLError as e:
+            st.error(f'URL Error: {str(e)}. URL: {url}')
+        except Exception as e:
+            st.error(f'Unexpected error: {str(e)}. URL: {url}')
 
     if st.session_state.content:
         # Display question count
@@ -139,16 +126,14 @@ def main():
         question = st.text_input("Enter your question:", value="", key="question_input")
 
         if st.button("Ask"):
-            if not st.session_state.openai_api_key:
-                st.warning("Please enter your OpenAI API key.")
-            elif not question:
-                st.warning("Please enter a question.")
-            elif client:
+            if question:
                 st.session_state.question_count += 1
                 with st.spinner("Generating answer..."):
-                    answer = ask_question(client, st.session_state.content, question)
+                    answer = ask_question(azure_api_key, st.session_state.content, question)
                 st.subheader(f"Answer to Question {st.session_state.question_count}:")
                 st.write(answer)
+            else:
+                st.warning("Please enter a question.")
 
     # Reset button
     if st.button("Reset"):
